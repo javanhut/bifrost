@@ -1,0 +1,16 @@
+[package]
+  name = "example-package"
+  version = "0.1.0"
+  authors = ["Your Name <you@example.com>"]
+  description = "A Carrion package"
+  license = "MIT"
+  repository = ""
+  keywords = []
+  [package.metadata]
+    main = "src/main.crl"
+    include = ["src/**/*.crl", "README.md", "LICENSE"]
+    exclude = ["tests/**/*", "*.log"]
+
+[dependencies]
+
+[dev-dependencies]

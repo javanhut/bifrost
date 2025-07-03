@@ -1,0 +1,7 @@
+# Main module for your Carrion package
+
+grimoire Main {
+    incantation new() {
+        echo("Hello from your new Carrion package!")
+    }
+}

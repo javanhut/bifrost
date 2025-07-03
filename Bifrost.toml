@@ -1,0 +1,11 @@
+name = "bifrost-package-manager"
+version = "0.0.1"
+authors = ["javanhut@carrionlang.com"]
+desription = "Carrion Package Manager for installing new packages"
+license = "MIT"
+
+
+
+[dependencies]
+carrionlang = ">=0.1.6, <1.0.0"
+json-utils = "^0.3.5"
