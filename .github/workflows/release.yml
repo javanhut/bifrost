@@ -1,0 +1,107 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Go
+      uses: actions/setup-go@v4
+      with:
+        go-version: '1.21'
+
+    - name: Cache Go modules
+      uses: actions/cache@v3
+      with:
+        path: ~/go/pkg/mod
+        key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+        restore-keys: |
+          ${{ runner.os }}-go-
+
+    - name: Extract version from tag
+      id: version
+      run: echo "VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
+
+    - name: Download dependencies
+      run: go mod download
+
+    - name: Run tests
+      run: go test -v ./...
+
+    - name: Build for Linux amd64
+      run: |
+        mkdir -p build/linux-amd64
+        GOOS=linux GOARCH=amd64 go build -ldflags="-s -w -X main.version=${{ steps.version.outputs.VERSION }}" -o build/linux-amd64/bifrost ./cmd/bifrost
+
+    - name: Build for Linux arm64
+      run: |
+        mkdir -p build/linux-arm64
+        GOOS=linux GOARCH=arm64 go build -ldflags="-s -w -X main.version=${{ steps.version.outputs.VERSION }}" -o build/linux-arm64/bifrost ./cmd/bifrost
+
+    - name: Build for macOS amd64
+      run: |
+        mkdir -p build/darwin-amd64
+        GOOS=darwin GOARCH=amd64 go build -ldflags="-s -w -X main.version=${{ steps.version.outputs.VERSION }}" -o build/darwin-amd64/bifrost ./cmd/bifrost
+
+    - name: Build for macOS arm64
+      run: |
+        mkdir -p build/darwin-arm64
+        GOOS=darwin GOARCH=arm64 go build -ldflags="-s -w -X main.version=${{ steps.version.outputs.VERSION }}" -o build/darwin-arm64/bifrost ./cmd/bifrost
+
+    - name: Build for Windows amd64
+      run: |
+        mkdir -p build/windows-amd64
+        GOOS=windows GOARCH=amd64 go build -ldflags="-s -w -X main.version=${{ steps.version.outputs.VERSION }}" -o build/windows-amd64/bifrost.exe ./cmd/bifrost
+
+    - name: Create release archives
+      run: |
+        mkdir -p build/releases
+        cd build/linux-amd64 && tar -czf ../releases/bifrost-${{ steps.version.outputs.VERSION }}-linux-amd64.tar.gz bifrost
+        cd ../linux-arm64 && tar -czf ../releases/bifrost-${{ steps.version.outputs.VERSION }}-linux-arm64.tar.gz bifrost
+        cd ../darwin-amd64 && tar -czf ../releases/bifrost-${{ steps.version.outputs.VERSION }}-darwin-amd64.tar.gz bifrost
+        cd ../darwin-arm64 && tar -czf ../releases/bifrost-${{ steps.version.outputs.VERSION }}-darwin-arm64.tar.gz bifrost
+        cd ../windows-amd64 && zip ../releases/bifrost-${{ steps.version.outputs.VERSION }}-windows-amd64.zip bifrost.exe
+
+    - name: Create GitHub Release
+      uses: softprops/action-gh-release@v1
+      with:
+        name: Release ${{ steps.version.outputs.VERSION }}
+        body: |
+          # Bifrost ${{ steps.version.outputs.VERSION }}
+          
+          Package manager for the Carrion programming language.
+          
+          ## Downloads
+          
+          Choose the appropriate binary for your platform:
+          
+          - **Linux (x86_64)**: `bifrost-${{ steps.version.outputs.VERSION }}-linux-amd64.tar.gz`
+          - **Linux (ARM64)**: `bifrost-${{ steps.version.outputs.VERSION }}-linux-arm64.tar.gz`
+          - **macOS (Intel)**: `bifrost-${{ steps.version.outputs.VERSION }}-darwin-amd64.tar.gz`
+          - **macOS (Apple Silicon)**: `bifrost-${{ steps.version.outputs.VERSION }}-darwin-arm64.tar.gz`
+          - **Windows (x86_64)**: `bifrost-${{ steps.version.outputs.VERSION }}-windows-amd64.zip`
+          
+          ## Installation
+          
+          Extract the archive and add the binary to your PATH, or use the installation scripts in the repository.
+        files: |
+          build/releases/bifrost-${{ steps.version.outputs.VERSION }}-linux-amd64.tar.gz
+          build/releases/bifrost-${{ steps.version.outputs.VERSION }}-linux-arm64.tar.gz
+          build/releases/bifrost-${{ steps.version.outputs.VERSION }}-darwin-amd64.tar.gz
+          build/releases/bifrost-${{ steps.version.outputs.VERSION }}-darwin-arm64.tar.gz
+          build/releases/bifrost-${{ steps.version.outputs.VERSION }}-windows-amd64.zip
+        draft: false
+        prerelease: false
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
