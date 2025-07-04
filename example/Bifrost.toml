@@ -1,11 +1,11 @@
 [package]
-  name = "example-package"
-  version = "0.1.0"
-  authors = ["Your Name <you@example.com>"]
-  description = "A Carrion package"
+  name = "hello-carrion"
+  version = "1.0.0"
+  authors = ["Carrion Team <team@carrionlang.com>"]
+  description = "A simple Hello World package for testing Carrion package manager"
   license = "MIT"
-  repository = ""
-  keywords = []
+  repository = "https://github.com/javanhut/bifrost"
+  keywords = ["hello", "example", "test", "demo"]
   [package.metadata]
     main = "src/main.crl"
     include = ["src/**/*.crl", "README.md", "LICENSE"]

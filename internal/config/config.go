@@ -7,11 +7,12 @@ import (
 )
 
 type Config struct {
-	HomeDir      string
-	PackagesDir  string
-	CacheDir     string
-	RegistryDir  string
-	ModulesDir   string
+	HomeDir     string
+	PackagesDir string
+	CacheDir    string
+	RegistryDir string
+	ModulesDir  string
+	RegistryURL string
 }
 
 func New() (*Config, error) {
@@ -20,12 +21,18 @@ func New() (*Config, error) {
 		return nil, err
 	}
 
+	registryURL := os.Getenv("CARRION_REGISTRY_URL")
+	if registryURL == "" {
+		registryURL = "https://registry.carrionlang.com"
+	}
+
 	return &Config{
-		HomeDir:      homeDir,
-		PackagesDir:  filepath.Join(homeDir, "packages"),
-		CacheDir:     filepath.Join(homeDir, "cache"),
-		RegistryDir:  filepath.Join(homeDir, "registry"),
-		ModulesDir:   "carrion_modules",
+		HomeDir:     homeDir,
+		PackagesDir: filepath.Join(homeDir, "packages"),
+		CacheDir:    filepath.Join(homeDir, "cache"),
+		RegistryDir: filepath.Join(homeDir, "registry"),
+		ModulesDir:  "carrion_modules",
+		RegistryURL: registryURL,
 	}, nil
 }
 

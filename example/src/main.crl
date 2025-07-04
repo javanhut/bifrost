@@ -1,7 +1,12 @@
-# Main module for your Carrion package
+# Hello Carrion - A simple test package
 
-grimoire Main {
-    incantation new() {
-        echo("Hello from your new Carrion package!")
+grimoire HelloCarrion {
+    incantation greet() {
+        echo("Hello from Carrion! 🔮")
+        echo("This is a test package for the Bifrost package manager.")
+    }
+    
+    incantation version() {
+        echo("hello-carrion v1.0.0")
     }
 }

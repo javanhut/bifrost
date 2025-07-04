@@ -122,8 +122,13 @@ Create a new Carrion package with a default structure.
 ### `bifrost install`
 Install all dependencies from `Bifrost.toml`.
 
-### `bifrost install <package>`
-Install a specific package (registry support coming soon).
+### `bifrost install <package>[@version]`
+Install a specific package from the registry.
+
+```bash
+bifrost install json-utils         # Latest version
+bifrost install json-utils@1.2.3   # Specific version
+```
 
 ### `bifrost install --global <package>`
 Install a package globally to the shared system location (`/usr/local/share/carrion/lib/`).
@@ -138,7 +143,27 @@ List all installed packages (both local and user-specific).
 Display information about the current package.
 
 ### `bifrost search <query>`
-Search for packages in the registry (coming soon).
+Search for packages in the registry.
+
+```bash
+bifrost search json
+bifrost search http-client
+```
+
+### `bifrost info <package>[@version]`
+Display information about a package from the registry.
+
+```bash
+bifrost info json-utils        # Latest version
+bifrost info json-utils@1.2.3  # Specific version
+```
+
+### `bifrost publish`
+Publish the current package to the registry. Requires authentication.
+
+```bash
+bifrost publish
+```
 
 ### `bifrost version`
 Show Bifrost version.
@@ -180,12 +205,91 @@ import "json-utils/parser"
 import "http-client/request" as http
 ```
 
+## Registry Integration
+
+Bifrost integrates with the Carrion Package Registry for publishing and installing packages.
+
+### Registry Configuration
+
+The default registry is `https://registry.carrionlang.com`. You can override this with:
+
+```bash
+export CARRION_REGISTRY_URL="https://your-private-registry.com"
+```
+
+### Publishing Packages
+
+1. **Prepare your package** - Ensure your `Bifrost.toml` is complete:
+
+```toml
+[package]
+name = "my-package"
+version = "1.0.0"
+authors = ["Your Name <you@example.com>"]
+description = "A useful Carrion package"
+license = "MIT"
+homepage = "https://github.com/username/my-package"
+repository = "https://github.com/username/my-package"
+keywords = ["utility", "helper"]
+
+[package.metadata]
+main = "src/main.crl"
+include = ["src/**/*.crl", "README.md", "LICENSE"]
+exclude = ["tests/**/*", "*.log"]
+```
+
+2. **Publish to registry**:
+
+```bash
+bifrost publish
+```
+
+This will:
+- Create a `.tar.gz` archive of your package
+- Upload both metadata and package file to the registry
+- Make your package available for others to install
+
+### Installing Packages
+
+Install packages from the registry:
+
+```bash
+# Install latest version
+bifrost install json-utils
+
+# Install specific version
+bifrost install json-utils@1.2.3
+
+# Install globally (system-wide)
+bifrost install --global json-utils
+```
+
+### Searching Packages
+
+Find packages in the registry:
+
+```bash
+bifrost search json
+bifrost search http
+bifrost search testing
+```
+
+### Package Information
+
+Get detailed information about packages:
+
+```bash
+bifrost info json-utils        # Latest version info
+bifrost info json-utils@1.2.3  # Specific version info
+```
+
 ## Configuration
 
 ### Environment Variables
 
 - `CARRION_HOME` - Override default Carrion home directory (default: `~/.carrion`)
 - `CARRION_IMPORT_PATH` - Additional import paths (colon-separated)
+- `CARRION_REGISTRY_URL` - Override default registry URL (default: `https://registry.carrionlang.com`)
 
 ### Directory Structure
 
@@ -246,8 +350,9 @@ Bifrost is in active development. Current features:
 - ✅ User-specific package management
 - ✅ System-wide global package management
 - ✅ Full integration with Carrion imports
-- ⏳ Package registry (coming soon)
-- ⏳ Package publishing (coming soon)
+- ✅ Package registry integration
+- ✅ Package publishing and searching
+- ✅ Remote package installation
 - ⏳ Private registries (planned)
 - ⏳ Workspace support (planned)
 

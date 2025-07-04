@@ -1,10 +1,15 @@
+[package]
 name = "bifrost-package-manager"
-version = "0.0.1"
+version = "0.2.0"
 authors = ["javanhut@carrionlang.com"]
-desription = "Carrion Package Manager for installing new packages"
+description = "Carrion Package Manager for installing new packages"
 license = "MIT"
+repository = "https://github.com/javanhut/bifrost"
+keywords = ["package-manager", "carrion", "build-tool"]
 
-
+[package.metadata]
+main = "cmd/bifrost/main.go"
+include = ["internal/**/*", "go.mod", "go.sum", "LICENSE", "README.md"]
 
 [dependencies]
 carrionlang = ">=0.1.6, <1.0.0"

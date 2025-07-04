@@ -7,20 +7,20 @@ import (
 )
 
 type Manifest struct {
-	Package      Package           `toml:"package"`
-	Dependencies map[string]string `toml:"dependencies"`
+	Package         Package           `toml:"package"`
+	Dependencies    map[string]string `toml:"dependencies"`
 	DevDependencies map[string]string `toml:"dev-dependencies"`
 }
 
 type Package struct {
-	Name         string            `toml:"name"`
-	Version      string            `toml:"version"`
-	Authors      []string          `toml:"authors"`
-	Description  string            `toml:"description"`
-	License      string            `toml:"license"`
-	Repository   string            `toml:"repository"`
-	Keywords     []string          `toml:"keywords"`
-	Metadata     PackageMetadata   `toml:"metadata"`
+	Name        string          `toml:"name"`
+	Version     string          `toml:"version"`
+	Authors     []string        `toml:"authors"`
+	Description string          `toml:"description"`
+	License     string          `toml:"license"`
+	Repository  string          `toml:"repository"`
+	Keywords    []string        `toml:"keywords"`
+	Metadata    PackageMetadata `toml:"metadata"`
 }
 
 type PackageMetadata struct {
@@ -40,20 +40,20 @@ func Load(path string) (*Manifest, error) {
 func WriteDefault(path string) error {
 	m := Manifest{
 		Package: Package{
-			Name:         "my-package",
-			Version:      "0.1.0",
-			Authors:      []string{"Your Name <you@example.com>"},
-			Description:  "A Carrion package",
-			License:      "MIT",
-			Repository:   "",
-			Keywords:     []string{},
+			Name:        "my-package",
+			Version:     "0.1.0",
+			Authors:     []string{"Your Name <you@example.com>"},
+			Description: "A Carrion package",
+			License:     "MIT",
+			Repository:  "",
+			Keywords:    []string{},
 			Metadata: PackageMetadata{
 				Main:    "src/main.crl",
 				Include: []string{"src/**/*.crl", "README.md", "LICENSE"},
 				Exclude: []string{"tests/**/*", "*.log"},
 			},
 		},
-		Dependencies: map[string]string{},
+		Dependencies:    map[string]string{},
 		DevDependencies: map[string]string{},
 	}
 	f, err := os.Create(path)
