@@ -81,19 +81,30 @@ func (c *Config) GetImportPaths(workingDir string) []string {
 		workingDir,
 		// Local project modules
 		filepath.Join(workingDir, c.ModulesDir),
-		// Global packages
+		// Global packages (user-specific)
 		c.PackagesDir,
 	}
 
-	// Add platform-specific paths
+	// Add platform-specific shared global paths
 	if runtime.GOOS == "windows" {
 		if programData := os.Getenv("ProgramData"); programData != "" {
-			paths = append(paths, filepath.Join(programData, "Carrion", "packages"))
+			paths = append(paths, filepath.Join(programData, "Carrion", "lib"))
 		}
 	} else {
-		// Unix-like systems
-		paths = append(paths, "/usr/local/share/carrion/packages")
+		// Unix-like systems - shared global location
+		paths = append(paths, "/usr/local/share/carrion/lib")
 	}
 
 	return paths
+}
+
+// GetSharedGlobalPackagesDir returns the shared global packages directory
+func (c *Config) GetSharedGlobalPackagesDir() string {
+	if runtime.GOOS == "windows" {
+		if programData := os.Getenv("ProgramData"); programData != "" {
+			return filepath.Join(programData, "Carrion", "lib")
+		}
+		return filepath.Join("C:", "ProgramData", "Carrion", "lib")
+	}
+	return "/usr/local/share/carrion/lib"
 }

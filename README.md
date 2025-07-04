@@ -125,8 +125,14 @@ Install all dependencies from `Bifrost.toml`.
 ### `bifrost install <package>`
 Install a specific package (registry support coming soon).
 
+### `bifrost install --global <package>`
+Install a package globally to the shared system location (`/usr/local/share/carrion/lib/`).
+
+### `bifrost install -g <package>`
+Short form of global installation.
+
 ### `bifrost list`
-List all installed packages.
+List all installed packages (both local and user-specific).
 
 ### `bifrost info`
 Display information about the current package.
@@ -154,12 +160,15 @@ my-package/
 
 ## Import Resolution
 
-Bifrost extends Carrion's import system with the following search order:
+Bifrost integrates with Carrion's import system, which searches for modules in the following order:
 
-1. Current directory
-2. Project's `carrion_modules/` directory
-3. Global packages directory (`~/.carrion/packages/`)
-4. Standard library (embedded in Carrion binary)
+1. **Current Directory** - Local files relative to the current working directory
+2. **Project Modules** - `./carrion_modules/` directory for project-specific packages
+3. **User Packages** - `~/.carrion/packages/` for user-installed packages
+4. **Global Packages** - `/usr/local/share/carrion/lib/` for system-wide packages (managed by Bifrost)
+5. **Standard Library** - Built-in Munin standard library modules
+
+This multi-tier system allows for flexible package management, from local development to system-wide installations.
 
 ### Using Installed Packages
 
@@ -180,9 +189,12 @@ import "http-client/request" as http
 
 ### Directory Structure
 
+Bifrost manages packages in multiple locations depending on installation type:
+
+#### User-Specific Packages
 ```
 ~/.carrion/
-├── packages/            # Installed packages
+├── packages/            # User-installed packages
 │   ├── json-utils/
 │   │   ├── 0.3.5/      # Version directories
 │   │   └── 0.3.6/
@@ -192,16 +204,48 @@ import "http-client/request" as http
 └── registry/           # Registry metadata cache
 ```
 
+#### Global System Packages
+```
+/usr/local/share/carrion/
+└── lib/                # Globally installed packages
+    ├── json-utils/
+    │   ├── 1.0.0/
+    │   │   ├── parser.crl
+    │   │   ├── formatter.crl
+    │   │   └── Bifrost.toml
+    │   └── 1.0.1/
+    └── http-client/
+        └── 2.1.0/
+            ├── request.crl
+            ├── response.crl
+            └── auth.crl
+```
+
+#### Project-Specific Packages
+```
+project/
+└── carrion_modules/    # Project-local packages
+    ├── test-utils/
+    │   ├── mock.crl
+    │   └── assert.crl
+    └── dev-helpers/
+        └── debug.crl
+```
+
 ## Development Status
 
 Bifrost is in active development. Current features:
 
 - ✅ Package manifest specification
-- ✅ Basic CLI commands
+- ✅ Basic CLI commands (`init`, `install`, `list`, `info`, `version`)
+- ✅ Global package installation (`--global` flag)
+- ✅ Multi-tier import resolution system
 - ✅ Version constraint parsing
 - ✅ Dependency resolution algorithm
 - ✅ Local package management
-- ✅ Integration with Carrion imports
+- ✅ User-specific package management
+- ✅ System-wide global package management
+- ✅ Full integration with Carrion imports
 - ⏳ Package registry (coming soon)
 - ⏳ Package publishing (coming soon)
 - ⏳ Private registries (planned)

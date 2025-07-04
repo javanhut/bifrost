@@ -41,7 +41,7 @@ func (i *Installer) Install(resolution *resolver.Resolution) error {
 }
 
 func (i *Installer) installPackage(pkg *resolver.Package) error {
-	// Check if already installed
+	// Check if already installed (user-specific location)
 	installPath := i.config.PackagePath(pkg.Name, pkg.Version.String())
 	if _, err := os.Stat(installPath); err == nil {
 		fmt.Printf("  Already installed at %s\n", installPath)
@@ -52,6 +52,76 @@ func (i *Installer) installPackage(pkg *resolver.Package) error {
 	// For now, we'll implement local file installation
 	
 	return fmt.Errorf("registry download not yet implemented")
+}
+
+// InstallGlobal installs a package to the shared global location
+func (i *Installer) InstallGlobal(pkg *resolver.Package, sourcePath string) error {
+	sharedDir := i.config.GetSharedGlobalPackagesDir()
+	installPath := filepath.Join(sharedDir, pkg.Name, pkg.Version.String())
+	
+	// Check if already installed globally
+	if _, err := os.Stat(installPath); err == nil {
+		fmt.Printf("Package %s@%s already installed globally at %s\n", 
+			pkg.Name, pkg.Version.String(), installPath)
+		return nil
+	}
+	
+	// Create target directory (may require sudo)
+	if err := os.MkdirAll(installPath, 0755); err != nil {
+		return fmt.Errorf("failed to create global install directory %s (may need sudo): %w", 
+			installPath, err)
+	}
+	
+	// Copy package files to global location
+	if err := i.copyDirectory(sourcePath, installPath); err != nil {
+		return fmt.Errorf("failed to copy package to global location: %w", err)
+	}
+	
+	fmt.Printf("Package %s@%s installed globally at %s\n", 
+		pkg.Name, pkg.Version.String(), installPath)
+	
+	return nil
+}
+
+// copyDirectory recursively copies a directory
+func (i *Installer) copyDirectory(src, dst string) error {
+	return filepath.Walk(src, func(path string, info os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
+		
+		// Calculate the destination path
+		relPath, err := filepath.Rel(src, path)
+		if err != nil {
+			return err
+		}
+		dstPath := filepath.Join(dst, relPath)
+		
+		if info.IsDir() {
+			return os.MkdirAll(dstPath, info.Mode())
+		}
+		
+		// Copy file
+		return i.copyFile(path, dstPath)
+	})
+}
+
+// copyFile copies a single file
+func (i *Installer) copyFile(src, dst string) error {
+	srcFile, err := os.Open(src)
+	if err != nil {
+		return err
+	}
+	defer srcFile.Close()
+	
+	dstFile, err := os.Create(dst)
+	if err != nil {
+		return err
+	}
+	defer dstFile.Close()
+	
+	_, err = io.Copy(dstFile, srcFile)
+	return err
 }
 
 func (i *Installer) InstallLocal(manifestPath string) error {

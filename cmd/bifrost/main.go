@@ -72,6 +72,7 @@ grimoire Main {
 		Short: "Install dependencies",
 		Run: func(cmd *cobra.Command, args []string) {
 			installer := install.New(cfg)
+			global, _ := cmd.Flags().GetBool("global")
 
 			if len(args) == 0 {
 				// Install from Bifrost.toml
@@ -91,10 +92,15 @@ grimoire Main {
 			} else {
 				// Install specific package
 				cmd.Printf("Installing %s...\n", args[0])
-				cmd.Println("Registry integration not yet implemented")
+				if global {
+					cmd.Println("Global installation not yet implemented (requires registry)")
+				} else {
+					cmd.Println("Registry integration not yet implemented")
+				}
 			}
 		},
 	}
+	installCmd.Flags().BoolP("global", "g", false, "Install package globally")
 	root.AddCommand(installCmd)
 
 	// List command
