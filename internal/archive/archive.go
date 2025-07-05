@@ -40,7 +40,7 @@ func Unpack(tarGzPath, destDir string) error {
 
 	tr := tar.NewReader(gr)
 	for {
-		hdr, err := tr.Next()
+		_, err := tr.Next()
 		if err == io.EOF {
 			break
 		} else if err != nil {

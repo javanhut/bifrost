@@ -154,16 +154,20 @@ Bifrost fully integrates with Carrion's import system, providing multi-tier pack
 - `bifrost install <package>` - Install a specific package (user-specific)
 - `bifrost install --global <package>` - Install a package globally (system-wide)
 - `bifrost install -g <package>` - Short form of global installation
+- `bifrost uninstall` - Remove dependencies from Bifrost.toml
+- `bifrost uninstall <package>` - Remove a specific package
+- `bifrost uninstall --global <package>` - Remove a globally installed package
+- `bifrost uninstall --all <package>` - Remove all versions of a package
+- `bifrost uninstall --clean` - Clean package cache
 - `bifrost info` - Show information about current package
-- `bifrost list` - List installed packages
+- `bifrost list` - List user-installed packages
+- `bifrost list --global` - List globally installed packages
+- `bifrost search <query>` - Search for packages in registry
+- `bifrost publish` - Publish package to registry
 - `bifrost version` - Show Bifrost version
 
 #### Planned Commands (Future)
 - `bifrost update` - Update dependencies to latest compatible versions
-- `bifrost remove <package>` - Remove a package
-- `bifrost publish` - Publish package to registry
-- `bifrost search <query>` - Search for packages
-- `bifrost clean` - Clean cache
 
 ### 7. Package Registry
 

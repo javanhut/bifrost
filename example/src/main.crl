@@ -1,12 +1,17 @@
 # Hello Carrion - A simple test package
 
-grimoire HelloCarrion {
-    incantation greet() {
-        echo("Hello from Carrion! 🔮")
-        echo("This is a test package for the Bifrost package manager.")
-    }
+grim HelloCarrion:
+    init():
+        ignore
+
+    spell greet:
+        print("Hello from Carrion! 🔮")
+        print("This is a test package for the Bifrost package manager.")
     
-    incantation version() {
-        echo("hello-carrion v1.0.0")
-    }
-}
+    spell version():
+        print("hello-carrion v1.0.0")
+
+main:
+    hc = HelloCarrion()
+    hc.greet()
+    hc.version()

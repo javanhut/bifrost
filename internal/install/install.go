@@ -326,6 +326,12 @@ func (i *Installer) CreateSymlinks(pkg *resolver.Package) error {
 }
 
 func (i *Installer) InstallPackageByName(packageName string, version string, global bool) error {
+	// For local installation, use the local package installation method
+	if !global {
+		return i.InstallPackageLocalByName(packageName, version)
+	}
+	
+	// Continue with existing global installation logic
 	client := registry.NewClient(i.config.RegistryURL)
 
 	// If no version specified, get latest
@@ -405,4 +411,96 @@ func (i *Installer) InstallPackageByName(packageName string, version string, glo
 	}
 
 	return nil
+}
+
+// InstallPackageLocalByName installs a package to the local project directory
+func (i *Installer) InstallPackageLocalByName(packageName string, version string) error {
+	client := registry.NewClient(i.config.RegistryURL)
+
+	// If no version specified, get latest
+	if version == "" {
+		version = "latest"
+	}
+
+	// Get package info
+	pkgInfo, err := client.GetPackageInfo(packageName, version)
+	if err != nil {
+		return fmt.Errorf("failed to get package info: %w", err)
+	}
+
+	// Create a Package struct for installation
+	pkg := &resolver.Package{
+		Name: pkgInfo.Name,
+		Version: &ver.Version{
+			Major: 0,
+			Minor: 0,
+			Patch: 1,
+		},
+	}
+
+	// Parse actual version if not "latest"
+	if version != "latest" && pkgInfo.Version != "" {
+		if v, err := ver.Parse(pkgInfo.Version); err == nil {
+			pkg.Version = v
+		}
+	}
+
+	// Use local installation path
+	installPath := i.config.LocalPackagePath(pkg.Name, pkgInfo.Version)
+	
+	// Check if already installed locally
+	if _, err := os.Stat(installPath); err == nil {
+		fmt.Printf("Package %s@%s already installed locally at %s\n", pkg.Name, pkgInfo.Version, installPath)
+		return nil
+	}
+
+	// Download package archive
+	archivePath := i.config.CachePath(fmt.Sprintf("%s-%s.tar.gz", pkg.Name, pkgInfo.Version))
+	
+	fmt.Printf("Downloading %s@%s...\n", pkg.Name, pkgInfo.Version)
+	reader, err := client.DownloadPackage(pkg.Name, pkgInfo.Version)
+	if err != nil {
+		return fmt.Errorf("failed to download package: %w", err)
+	}
+	defer reader.Close()
+	
+	// Save to file
+	if err := i.saveToFile(reader, archivePath); err != nil {
+		return fmt.Errorf("failed to save package: %w", err)
+	}
+
+	// Install from archive to local directory
+	fmt.Printf("Installing to %s...\n", installPath)
+	if err := i.InstallFromArchiveToLocal(archivePath, pkg, pkgInfo.Version); err != nil {
+		return fmt.Errorf("failed to install from archive: %w", err)
+	}
+
+	// Clean up archive after successful installation
+	os.Remove(archivePath)
+
+	fmt.Printf("Successfully installed %s@%s to %s\n", pkg.Name, pkgInfo.Version, installPath)
+	return nil
+}
+
+// InstallFromArchiveToLocal extracts an archive to a local project directory
+func (i *Installer) InstallFromArchiveToLocal(archivePath string, pkg *resolver.Package, version string) error {
+	// Create target directory in local modules
+	installPath := i.config.LocalPackagePath(pkg.Name, version)
+	if err := os.MkdirAll(installPath, 0755); err != nil {
+		return err
+	}
+
+	// Open archive
+	file, err := os.Open(archivePath)
+	if err != nil {
+		return err
+	}
+	defer file.Close()
+
+	// Extract based on file extension
+	if strings.HasSuffix(archivePath, ".tar.gz") || strings.HasSuffix(archivePath, ".tgz") {
+		return i.extractTarGz(file, installPath)
+	}
+
+	return fmt.Errorf("unsupported archive format")
 }

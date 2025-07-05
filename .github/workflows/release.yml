@@ -33,6 +33,14 @@ jobs:
       id: version
       run: echo "VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
 
+    - name: Update Bifrost.toml version
+      run: |
+        sed -i 's/^version = ".*"/version = "${{ steps.version.outputs.VERSION }}"/' Bifrost.toml
+        git config --local user.email "action@github.com"
+        git config --local user.name "GitHub Action"
+        git add Bifrost.toml
+        git commit -m "Update version to ${{ steps.version.outputs.VERSION }}" || echo "No changes to commit"
+
     - name: Download dependencies
       run: go mod download
 

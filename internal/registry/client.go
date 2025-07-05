@@ -17,6 +17,10 @@ type Client struct {
 	baseURL    string
 	apiURL     string
 	httpClient *http.Client
+	apiKey     string
+	username   string
+	password   string
+	authType   string
 }
 
 type PackageInfo struct {
@@ -152,11 +156,27 @@ func (c *Client) Health() error {
 }
 
 func (c *Client) Publish(packagePath string, metadata *PackageInfo) error {
-	// Use the new enhanced publish endpoint that handles both metadata and file
+	// Use direct Nexus upload since it's working
+	if err := c.publishDirectToNexus(packagePath, metadata); err == nil {
+		// Also register with the index service
+		c.registerWithIndex(metadata)
+		return nil
+	}
+	
+	// Fall back to registry publish if direct upload fails
 	return c.publishPackage(packagePath, metadata)
 }
 
+func (c *Client) PublishTest(packagePath string, metadata *PackageInfo) error {
+	// Use test publish endpoint
+	return c.publishPackageToEndpoint(packagePath, metadata, "/api/publish-test")
+}
+
 func (c *Client) publishPackage(packagePath string, metadata *PackageInfo) error {
+	return c.publishPackageToEndpoint(packagePath, metadata, "/api/publish")
+}
+
+func (c *Client) publishPackageToEndpoint(packagePath string, metadata *PackageInfo, endpoint string) error {
 	// Open the package file
 	file, err := os.Open(packagePath)
 	if err != nil {
@@ -193,13 +213,20 @@ func (c *Client) publishPackage(packagePath string, metadata *PackageInfo) error
 	}
 
 	// Create request
-	url := fmt.Sprintf("%s/api/publish", c.apiURL)
+	url := fmt.Sprintf("%s%s", c.apiURL, endpoint)
 	req, err := http.NewRequest("POST", url, body)
 	if err != nil {
 		return fmt.Errorf("failed to create request: %w", err)
 	}
 
 	req.Header.Set("Content-Type", writer.FormDataContentType())
+
+	// Add authentication header based on auth type
+	if c.authType == "token" && c.apiKey != "" {
+		req.Header.Set("Authorization", "Bearer "+c.apiKey)
+	} else if c.authType == "basic" && c.username != "" && c.password != "" {
+		req.SetBasicAuth(c.username, c.password)
+	}
 
 	// Send request
 	resp, err := c.httpClient.Do(req)
@@ -238,4 +265,119 @@ func (c *Client) DownloadPackage(name, version string) (io.ReadCloser, error) {
 	}
 
 	return resp.Body, nil
+}
+
+// SetAPIKey sets the API key for token-based authentication
+func (c *Client) SetAPIKey(apiKey string) {
+	c.apiKey = apiKey
+	c.authType = "token"
+}
+
+// SetBasicAuth sets username and password for basic authentication
+func (c *Client) SetBasicAuth(username, password string) {
+	c.username = username
+	c.password = password
+	c.authType = "basic"
+}
+
+// publishDirectToNexus uploads directly to the Nexus repository using proper API
+func (c *Client) publishDirectToNexus(packagePath string, metadata *PackageInfo) error {
+	// Open the package file
+	file, err := os.Open(packagePath)
+	if err != nil {
+		return fmt.Errorf("failed to open package file: %w", err)
+	}
+	defer file.Close()
+
+	// Create multipart form for Nexus components API
+	body := &bytes.Buffer{}
+	writer := multipart.NewWriter(body)
+
+	// Add raw directory
+	directoryPath := fmt.Sprintf("packages/%s/%s", metadata.Name, metadata.Version)
+	if err := writer.WriteField("raw.directory", directoryPath); err != nil {
+		return fmt.Errorf("failed to write directory field: %w", err)
+	}
+
+	// Add the package file
+	filename := fmt.Sprintf("%s-%s.tar.gz", metadata.Name, metadata.Version)
+	part, err := writer.CreateFormFile("raw.asset1", filename)
+	if err != nil {
+		return fmt.Errorf("failed to create form file: %w", err)
+	}
+
+	if _, err := io.Copy(part, file); err != nil {
+		return fmt.Errorf("failed to copy file: %w", err)
+	}
+
+	// Add filename field
+	if err := writer.WriteField("raw.asset1.filename", filename); err != nil {
+		return fmt.Errorf("failed to write filename field: %w", err)
+	}
+
+	if err := writer.Close(); err != nil {
+		return fmt.Errorf("failed to close multipart writer: %w", err)
+	}
+
+	// Use Nexus components API for upload
+	uploadURL := fmt.Sprintf("https://registry.carrionlang.com/nexus/service/rest/v1/components?repository=carrion")
+
+	// Create request
+	req, err := http.NewRequest("POST", uploadURL, body)
+	if err != nil {
+		return fmt.Errorf("failed to create request: %w", err)
+	}
+
+	req.Header.Set("Content-Type", writer.FormDataContentType())
+	
+	// Add authentication if available (use client's configured auth)
+	if c.authType == "basic" && c.username != "" && c.password != "" {
+		req.SetBasicAuth(c.username, c.password)
+	}
+
+	// Send request
+	resp, err := c.httpClient.Do(req)
+	if err != nil {
+		return fmt.Errorf("failed to upload to Nexus: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusCreated && resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusNoContent {
+		body, _ := io.ReadAll(resp.Body)
+		return fmt.Errorf("nexus upload failed with status %d: %s", resp.StatusCode, string(body))
+	}
+
+	return nil
+}
+
+// registerWithIndex registers package metadata with the index service
+func (c *Client) registerWithIndex(metadata *PackageInfo) error {
+	// Prepare metadata
+	metadataJSON, err := json.Marshal(metadata)
+	if err != nil {
+		return fmt.Errorf("failed to marshal metadata: %w", err)
+	}
+
+	// Create request to register endpoint
+	url := fmt.Sprintf("%s/api/register", c.apiURL)
+	req, err := http.NewRequest("POST", url, bytes.NewReader(metadataJSON))
+	if err != nil {
+		return fmt.Errorf("failed to create register request: %w", err)
+	}
+
+	req.Header.Set("Content-Type", "application/json")
+
+	// Send request
+	resp, err := c.httpClient.Do(req)
+	if err != nil {
+		return fmt.Errorf("failed to register with index: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusCreated && resp.StatusCode != http.StatusOK {
+		body, _ := io.ReadAll(resp.Body)
+		return fmt.Errorf("index registration failed with status %d: %s", resp.StatusCode, string(body))
+	}
+
+	return nil
 }
