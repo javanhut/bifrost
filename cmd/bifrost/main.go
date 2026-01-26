@@ -7,6 +7,8 @@ import (
 	"os/exec"
 	"path/filepath"
 	"strings"
+	"errors"
+	"regexp"
 
 	"github.com/javanhut/bifrost/internal/auth"
 	"github.com/javanhut/bifrost/internal/config"
@@ -37,6 +39,13 @@ func maskAPIKey(apiKey string) string {
 	}
 	return apiKey[:4] + "..." + apiKey[len(apiKey)-4:]
 }
+func validateVersion(s string) error {
+				var versionRegex = regexp.MustCompile(`^\d+\.\d+\.\d+$`)
+				if !versionRegex.MatchString(s){
+					return errors.New("Invalid format must match format: 0.0.0 or Major.Minor.Patch")
+				}
+				return nil
+			}
 
 func main() {
 	// Initialize configuration
@@ -63,12 +72,28 @@ func main() {
 		Use:   "init",
 		Short: "Create a new Carrion package",
 		Run: func(cmd *cobra.Command, args []string) {
+			var packageName string
+			var versionNumber string
+			if len(args) == 1 {	
+				packageName = args[0]
+			}
+			if len(args) == 2 {
+				packageName = args[0]
+				versionNumber = args[1]
+				err := validateVersion(versionNumber)
+				if err != nil {
+					errorStr := fmt.Sprintf("Error: %v", err)
+					cmd.PrintErrln(errorStr)
+				}
+
+
+			}
 			if _, err := os.Stat("Bifrost.toml"); err == nil {
 				cmd.PrintErrln("Error: Bifrost.toml already exists")
 				os.Exit(1)
 			}
-
-			err := manifest.WriteDefault("Bifrost.toml")
+			packageName = strings.ToLower(packageName)
+			err := manifest.WriteDefault("Bifrost.toml", packageName, versionNumber)
 			cobra.CheckErr(err)
 
 			// Create directory structure
@@ -78,19 +103,25 @@ func main() {
 			}
 
 			// Create main.crl
-			mainContent := `
-grim Main():
-			init:
-				self.name: str = "package name"
-			spell new():
-				print(f"{self.name}")
+			mainContent := `grim Main:
+    init():
+        self.name = "package name"
+    spell new():
+        return self.name
 main:
-			m = Main()
-			m.new()
-
+    m = Main()
+    m.new()
 `
-			os.WriteFile("src/main.crl", []byte(mainContent), 0644)
+			testContent := `import "src/main.crl"
 
+spell appraise_main():
+    m = Main()
+    check(m.new() == "package name")
+`
+			readmeInfo := fmt.Sprintf("# %s", packageName)
+			os.WriteFile("src/main.crl", []byte(mainContent), 0644)
+			os.WriteFile("tests/appraise_main.crl", []byte(testContent),0644)
+			os.WriteFile("docs/README.md", []byte(readmeInfo), 0644)
 			cmd.Println("Created new Carrion package")
 			cmd.Println("Edit Bifrost.toml to configure your package")
 		},

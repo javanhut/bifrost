@@ -37,11 +37,17 @@ func Load(path string) (*Manifest, error) {
 	return &m, nil
 }
 
-func WriteDefault(path string) error {
+func WriteDefault(path string, packageName string, versionNumber string) error {
+	if packageName == "" {
+		packageName = "default-package"
+	}
+	if versionNumber == "" {
+		versionNumber = "0.0.1"
+	}
 	m := Manifest{
 		Package: Package{
-			Name:        "my-package",
-			Version:     "0.1.0",
+			Name:        packageName,
+			Version:     versionNumber,
 			Authors:     []string{"Your Name <you@example.com>"},
 			Description: "A Carrion package",
 			License:     "MIT",

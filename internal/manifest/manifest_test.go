@@ -161,7 +161,7 @@ func TestWriteDefault(t *testing.T) {
 	tempDir := t.TempDir()
 	manifestPath := filepath.Join(tempDir, "Bifrost.toml")
 
-	err := WriteDefault(manifestPath)
+	err := WriteDefault(manifestPath, "", "")
 	if err != nil {
 		t.Fatalf("WriteDefault() error = %v", err)
 	}
@@ -178,11 +178,11 @@ func TestWriteDefault(t *testing.T) {
 	}
 
 	// Check default values
-	if m.Package.Name != "my-package" {
-		t.Errorf("default package name = %v, want my-package", m.Package.Name)
+	if m.Package.Name != "default-package" {
+		t.Errorf("default package name = %v, want default-package", m.Package.Name)
 	}
-	if m.Package.Version != "0.1.0" {
-		t.Errorf("default version = %v, want 0.1.0", m.Package.Version)
+	if m.Package.Version != "0.0.1" {
+		t.Errorf("default version = %v, want 0.0.1", m.Package.Version)
 	}
 	if len(m.Package.Authors) != 1 || m.Package.Authors[0] != "Your Name <you@example.com>" {
 		t.Errorf("default authors = %v, want [Your Name <you@example.com>]", m.Package.Authors)
@@ -220,10 +220,32 @@ func TestWriteDefault(t *testing.T) {
 func TestWriteDefault_Error(t *testing.T) {
 	// Test writing to an invalid path
 	invalidPath := "/invalid/path/that/does/not/exist/Bifrost.toml"
-	
-	err := WriteDefault(invalidPath)
+
+	err := WriteDefault(invalidPath, "", "")
 	if err == nil {
 		t.Error("WriteDefault() should fail with invalid path")
+	}
+}
+
+func TestWriteDefault_CustomValues(t *testing.T) {
+	tempDir := t.TempDir()
+	manifestPath := filepath.Join(tempDir, "Bifrost.toml")
+
+	err := WriteDefault(manifestPath, "custom-package", "1.2.3")
+	if err != nil {
+		t.Fatalf("WriteDefault() error = %v", err)
+	}
+
+	m, err := Load(manifestPath)
+	if err != nil {
+		t.Fatalf("failed to load written manifest: %v", err)
+	}
+
+	if m.Package.Name != "custom-package" {
+		t.Errorf("custom package name = %v, want custom-package", m.Package.Name)
+	}
+	if m.Package.Version != "1.2.3" {
+		t.Errorf("custom version = %v, want 1.2.3", m.Package.Version)
 	}
 }
 
@@ -259,7 +281,7 @@ func TestManifestRoundTrip(t *testing.T) {
 	}
 
 	// Write manifest
-	err := WriteDefault(manifestPath)
+	err := WriteDefault(manifestPath, "", "")
 	if err != nil {
 		t.Fatalf("failed to write manifest: %v", err)
 	}
