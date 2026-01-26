@@ -78,13 +78,16 @@ func main() {
 			}
 
 			// Create main.crl
-			mainContent := `# Main module for your Carrion package
+			mainContent := `
+grim Main():
+			init:
+				self.name: str = "package name"
+			spell new():
+				print(f"{self.name}")
+main:
+			m = Main()
+			m.new()
 
-grimoire Main {
-    incantation new() {
-        echo("Hello from your new Carrion package!")
-    }
-}
 `
 			os.WriteFile("src/main.crl", []byte(mainContent), 0644)
 
