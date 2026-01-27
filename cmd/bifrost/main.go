@@ -93,35 +93,41 @@ func main() {
 				os.Exit(1)
 			}
 			packageName = strings.ToLower(packageName)
-			err := manifest.WriteDefault("Bifrost.toml", packageName, versionNumber)
-			cobra.CheckErr(err)
-
+			makePackage := packageName
+			os.MkdirAll(makePackage, 0755)
 			// Create directory structure
-			dirs := []string{"src", "tests", "docs"}
+			tomlPath := fmt.Sprintf("%s/Bifrost.toml", packageName)
+			err := manifest.WriteDefault(tomlPath, packageName, versionNumber)
+			cobra.CheckErr(err)
+			dirs := []string{"src", "appraise", "docs"}
 			for _, dir := range dirs {
-				os.MkdirAll(dir, 0755)
+				insidePackage := fmt.Sprintf("%s/%s",packageName, dir)
+				os.MkdirAll(insidePackage, 0755)
 			}
 
 			// Create main.crl
-			mainContent := `grim Main:
+			mainContent := fmt.Sprintf(`grim Main:
     init():
-        self.name = "package name"
+        self.name = "%s"
     spell new():
         return self.name
 main:
     m = Main()
     m.new()
-`
-			testContent := `import "src/main.crl"
+`, packageName)
+			testContent := fmt.Sprintf(`import "src/main.crl"
 
 spell appraise_main():
     m = Main()
-    check(m.new() == "package name")
-`
+    check(m.new() == "%s"
+`, packageName)
 			readmeInfo := fmt.Sprintf("# %s", packageName)
-			os.WriteFile("src/main.crl", []byte(mainContent), 0644)
-			os.WriteFile("tests/appraise_main.crl", []byte(testContent),0644)
-			os.WriteFile("docs/README.md", []byte(readmeInfo), 0644)
+			mainFile := fmt.Sprintf("%s/src/main.crl",packageName)
+			testFile := fmt.Sprintf("%s/appraise/appraise_main.crl",packageName)
+			docsFile := fmt.Sprintf("%s/docs/README.md", packageName)
+			os.WriteFile(mainFile, []byte(mainContent), 0644)
+			os.WriteFile(testFile, []byte(testContent),0644)
+			os.WriteFile(docsFile, []byte(readmeInfo), 0644)
 			cmd.Println("Created new Carrion package")
 			cmd.Println("Edit Bifrost.toml to configure your package")
 		},

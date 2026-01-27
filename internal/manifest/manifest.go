@@ -56,7 +56,7 @@ func WriteDefault(path string, packageName string, versionNumber string) error {
 			Metadata: PackageMetadata{
 				Main:    "src/main.crl",
 				Include: []string{"src/**/*.crl", "README.md", "LICENSE"},
-				Exclude: []string{"tests/**/*", "*.log"},
+				Exclude: []string{"appraise/**/*", "*.log"},
 			},
 		},
 		Dependencies:    map[string]string{},
