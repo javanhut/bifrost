@@ -3,7 +3,7 @@
 
 # Variables
 BINARY_NAME := bifrost
-VERSION := 0.1.0
+VERSION := 1.1.0
 BUILD_DIR := build
 INSTALL_DIR := /usr/local/bin
 GO := go
