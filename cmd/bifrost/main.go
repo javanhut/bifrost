@@ -115,11 +115,11 @@ main:
     m = Main()
     m.new()
 `, packageName)
-			testContent := fmt.Sprintf(`import "src/main.crl"
+			testContent := fmt.Sprintf(`import "src/main"
 
 spell appraise_main():
     m = Main()
-    check(m.new() == "%s"
+    check(m.new() == "%s")
 `, packageName)
 			readmeInfo := fmt.Sprintf("# %s", packageName)
 			mainFile := fmt.Sprintf("%s/src/main.crl",packageName)
