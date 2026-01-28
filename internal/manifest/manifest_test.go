@@ -203,7 +203,7 @@ func TestWriteDefault(t *testing.T) {
 		t.Errorf("default include = %v, want %v", m.Package.Metadata.Include, expectedInclude)
 	}
 
-	expectedExclude := []string{"tests/**/*", "*.log"}
+	expectedExclude := []string{"appraise/**/*", "*.log"}
 	if !reflect.DeepEqual(m.Package.Metadata.Exclude, expectedExclude) {
 		t.Errorf("default exclude = %v, want %v", m.Package.Metadata.Exclude, expectedExclude)
 	}
